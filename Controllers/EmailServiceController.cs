@@ -18,23 +18,24 @@ namespace EmailService.Controllers
         }
 
         [HttpPost]
-        [Route("send")]    
+        [Route("send")]
         public async Task<IActionResult> SendEmail(EmailData emailData)
         {
-            if (!(emailData.ToRecipients.Length > 0))  
+            if (emailData.ToRecipients == null || emailData.ToRecipients.Length == 0)
             {
                 _logger.LogDebug("ToEmail address is required.");
                 return BadRequest("ToEmail address is required.");
             }
+
             try
             {
-                await _emailSender.SendEmail(emailData); 
+                await _emailSender.SendEmail(emailData);
                 return Ok("Email sent successfully.");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"An error occurred while service the request. {ex.Message}");
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                _logger.LogError($"An error occurred while servicing the request. {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while sending the email.");
             }
         }
     }

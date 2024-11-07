@@ -18,44 +18,43 @@ namespace EmailService
         {
             try
             {
-                SmtpClient smtpClient = new SmtpClient(_emailSettings.MailServer);
-
-                MailMessage mailMessage = BuildMailMessage(emailData);
-                await smtpClient.SendMailAsync(mailMessage);
+                using (SmtpClient smtpClient = new SmtpClient(_emailSettings.MailServer))
+                {
+                    MailMessage mailMessage = BuildMailMessage(emailData);
+                    await smtpClient.SendMailAsync(mailMessage);
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError($"An error occurred while sending the email: {ex.Message}");
                 throw;
             }
         }
 
         private MailMessage BuildMailMessage(EmailData emailData)
         {
-            MailMessage mailMessage = new MailMessage();
-
-            mailMessage.From = new MailAddress(_emailSettings.SenderEmail);
-
-            if (emailData.ToRecipients != null && emailData.ToRecipients.Length > 0)
+            var mailMessage = new MailMessage
             {
-                foreach (string toEmail in emailData.ToRecipients)
-                {
-                    mailMessage.To.Add(toEmail);
-                }
-            }
+                From = new MailAddress(_emailSettings.SenderEmail),
+                Subject = emailData.Subject,
+                Body = emailData.Body
+            };
 
-            if (emailData.CCRecipients != null && emailData.CCRecipients.Length > 0)
-            {
-                foreach (string ccEmail in emailData.CCRecipients)
-                {
-                    mailMessage.CC.Add(ccEmail);
-                }
-            }
-
-            mailMessage.Subject = emailData.Subject;
-
-            mailMessage.Body = emailData.Body;
+            AddEmailAddresses(mailMessage.To, emailData.ToRecipients);
+            AddEmailAddresses(mailMessage.CC, emailData.CCRecipients);
 
             return mailMessage;
+        }
+
+        private void AddEmailAddresses(MailAddressCollection addressCollection, string[] emailAddresses)
+        {
+            if (emailAddresses != null && emailAddresses.Length > 0)
+            {
+                foreach (var email in emailAddresses)
+                {
+                    addressCollection.Add(email);
+                }
+            }
         }
     }
 }
